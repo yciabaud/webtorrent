@@ -4,11 +4,12 @@
 
 A webclient communicates with a tracker through a websocket connection. They exchange websocket text messages containing a payload using the JSON format.
 
-There is four category of payloads. Each payload category is represented by a field `action`:
+There is five category of payloads. Each payload category is represented by a field `action`:
 - an `announce` payload represents an annoounce similar to the original BitTorrent spec. There is still a small difference, because an announce contains a list of initial WebRTC offers that the tracker will forwards to the clients in the swarm, insted of returning a list of peers to the client.
 - a `scrape` payload is similar to the original BitTorrent spec.
 - an `offer` payload which represents a WebRTC offer the tracker has to forward.
 - an `answer` payload which represents a WebRTC answer the tracker has to forward.
+- a `failure` payload which represent an error.
 
 #### announce
 
@@ -35,7 +36,6 @@ A client send an `announce` payload to the tracker.
 ```
 
 The fields used in the payload are as follows:
-- `action`: string
 - `info_hash`: 20-bytes SHA1 hash of the value of the `info` key from the Metainfo file. This field is encoded in hexadecimal.
 - `peer_id`: 20-bytes string used as a unique ID for the client, generated at startup by the client.
 - `uploaded`: Total amount of bytes uploaded since the client sent the `started` event to the tracker, represented in base ten ASCII.
@@ -80,7 +80,6 @@ The tracker sent back a `scrape` payload which contains three more fields descri
 ```
 
 The fields used in the payload are as follows:
-- `action`: string
 - `info_hash`: 20-bytes SHA1 hash of the value of the `info` key from the Metainfo file. This field is encoded in hexadecimal.
 - `complete`: number of peers that have completed the download of the torrent, in base 10 ASCII. (also known as seeders).
 - `incomplete`: number of peers that has not yet completed the download of the torrent, in base ten ASCII. (also known as leechers).
@@ -133,7 +132,6 @@ A client never send an offer payload by himself, instead it sends a list of `off
 ```
 
 The fields used in the payload are as follows:
-- `action`: string
 - `info_hash`: 20-bytes SHA1 hash of the value of the `info` key from the Metainfo file. This field is encoded in hexadecimal.
 - `id`: unique identifier of the offer.
 - `from`: identifier of the peer who created the offer.
@@ -155,9 +153,26 @@ An `answer` payload is sent back to the tracker upon receiving an `offer` payloa
 ```
 
 The fields used in the payload are as follows:
-- `action`: string
 - `info_hash`: 20-bytes SHA1 hash of the value of the `info` key from the Metainfo file. This field is encoded in hexadecimal.
 - `offer_id`: unique identifier of the offer from which the answer was generated from.
 - `from`: identifier of the peer who created the answer. this is the identifier found in the field `id` of an `offer` payload.
 - `to`: identifier of the peer to whom the tracker must forward the answer. this is the identifier found in the field `from` of an `offer` payload.
 - `sdp`: WebRTC answer.
+
+#### failure
+
+A `failure` payload describes an error.
+
+```
+{
+   "action": "failure",
+   "info_hash": "",
+   "origin": "",
+   "reason": ""
+}
+```
+
+The fields used in the payload are as follows:
+- `info_hash`: 20-bytes SHA1 hash of the value of the `info` key from the Metainfo file. This field is encoded in hexadecimal.
+- `origin`: the content of the field `action` of the payload that caused the error. it may be left empty if the error is not related to a previous payload sent by the client.
+- `reason`: a human-readable error message
